@@ -12,6 +12,7 @@ import torch.optim as optim
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from datasets import load_dataset
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 
 class CharLSTM(nn.Module):
     def __init__(self, vocab_size, embedding_dim=64, hidden_dim=128):
@@ -51,7 +52,15 @@ class MyModel:
             next_char = text[i+seq_len]
             if all(c in cls.char2idx for c in context + next_char):
                 data.append((context, next_char))
-        train_data, _ = train_test_split(data, test_size=test_split, random_state=42)
+        
+        sample = True
+        if sample:
+            # Randomly sample 1% of the data
+            reduced_data = random.sample(data, int(len(data) * 0.01))
+            train_data, _ = train_test_split(reduced_data, test_size=test_split, random_state=42)
+        else:
+            train_data, _ = train_test_split(data, test_size=test_split, random_state=42)
+
         return train_data        
 
     @classmethod
@@ -83,11 +92,11 @@ class MyModel:
         print('Training on {} samples'.format(len(data)))
         print('Using device {}'.format(self.device))
         self.model.train()
-        print
+
         for epoch in range(epochs):
             print(f"Epoch {epoch+1}/{epochs}")
             total_loss = 0
-            for context, target in data:
+            for context, target in tqdm(data):
                 x = torch.tensor([[self.char2idx[c] for c in context]], dtype=torch.long).to(self.device)
                 y = torch.tensor([self.char2idx[target]], dtype=torch.long).to(self.device)
 
