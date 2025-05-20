@@ -49,25 +49,30 @@ class MyModel:
         # Wiki Small dataset
         #dataset = load_dataset("wikitext","wikitext-2-v1",trust_remote_code=True)
         #wiki large dataset
+        sample = True
+
         dataset = load_dataset("wikitext","wikitext-103-v1",trust_remote_code=True)
         lines = dataset['train']['text']
         # Filter out empty lines
         filtered_lines = [line for line in lines if line.strip() != ""]
-        text = "\n".join(filtered_lines)
+
+        if sample:
+            # Sample 20% of the lines randomly
+            sampled_lines = random.sample(filtered_lines, int(len(filtered_lines) * 0.2))
+            text = "\n".join(sampled_lines)
+        else:
+            text = "\n".join(filtered_lines)
         data = []
-        for i in range(len(text) - seq_len):
+
+        print(f"Preparing your training data for a character-level language model (seq_len={seq_len})...")
+        for i in tqdm(range(len(text) - seq_len)):
             context = text[i:i+seq_len]
             next_char = text[i+seq_len]
             if all(c in cls.char2idx for c in context + next_char):
                 data.append((context, next_char))
         
-        sample = True
-        if sample:
-            # Randomly sample 1% of the data
-            reduced_data = random.sample(data, int(len(data) * 0.2))
-            train_data, _ = train_test_split(reduced_data, test_size=test_split, random_state=42)
-        else:
-            train_data, _ = train_test_split(data, test_size=test_split, random_state=42)
+        print("Splits the dataset into a training set and a test set...")
+        train_data, _ = train_test_split(data, test_size=test_split, random_state=42)
 
         return train_data        
 
@@ -79,7 +84,7 @@ class MyModel:
             for line in f:
                 line = line.strip()
                 #inp = line[:-1]  # the last character is a newline
-                #data.append(inp)
+                #data.appendNo(inp)
                 for i in range(len(line) - sequence_length):
                     context = line[i:i+sequence_length]
                     next_char = line[i+sequence_length]
