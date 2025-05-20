@@ -13,6 +13,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from datasets import load_dataset
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor
 
 class CharLSTM(nn.Module):
     def __init__(self, vocab_size, embedding_dim=64, hidden_dim=128):
@@ -41,39 +42,38 @@ class MyModel:
         self.model = CharLSTM(self.vocab_size).to(self.device)
 
     @classmethod
-    def load_training_data(cls,seq_len=10, test_split=0.1):
+    def load_training_data(cls, seq_len=10, test_split=0.1):
         # your code here
-        # this particular model doesn't train
-        #dataset = load_dataset("tiny_shakespeare",trust_remote_code=True)
-        #text = dataset['train'][0]['text']
-        # Wiki Small dataset
-        #dataset = load_dataset("wikitext","wikitext-2-v1",trust_remote_code=True)
-        #wiki large dataset
-        sample = True
+        # dataset_name="wikitext-2-v1"
+        dataset_name = "wikitext-103-v1"
+        sample_fraction=0.05
+        pair_fraction=0.1
 
-        dataset = load_dataset("wikitext","wikitext-103-v1",trust_remote_code=True)
+        dataset = load_dataset("wikitext", dataset_name, trust_remote_code=True)
         lines = dataset['train']['text']
-        # Filter out empty lines
         filtered_lines = [line for line in lines if line.strip() != ""]
 
-        if sample:
-            # Sample 20% of the lines randomly
-            sampled_lines = random.sample(filtered_lines, int(len(filtered_lines) * 0.2))
-            text = "\n".join(sampled_lines)
-        else:
-            text = "\n".join(filtered_lines)
-        data = []
+        # Reduce the amount of text by sampling lines
+        num_lines = int(len(filtered_lines) * sample_fraction)
+        sampled_lines = random.sample(filtered_lines, num_lines)
+        text = "\n".join(sampled_lines)
 
         print(f"Preparing your training data for a character-level language model (seq_len={seq_len})...")
-        for i in tqdm(range(len(text) - seq_len)):
+        # Sample after splitting: randomly select starting indices
+        num_possible = len(text) - seq_len
+        num_pairs = int(num_possible * pair_fraction)
+        if num_pairs < 1:
+            num_pairs = 1
+        indices = random.sample(range(num_possible), num_pairs)
+        data = []
+        for i in tqdm(indices, desc="Generating pairs"): # num_possible
             context = text[i:i+seq_len]
             next_char = text[i+seq_len]
             if all(c in cls.char2idx for c in context + next_char):
                 data.append((context, next_char))
-        
+
         print("Splits the dataset into a training set and a test set...")
         train_data, _ = train_test_split(data, test_size=test_split, random_state=42)
-
         return train_data        
 
     @classmethod
@@ -141,7 +141,7 @@ class MyModel:
                 preds.append(''.join(pred_chars))
         return preds
         #for inp in data:
-         #   # this model just predicts a random character each time
+         #  # this model just predicts a random character each time
           #  top_guesses = [random.choice(all_chars) for _ in range(3)]
            # preds.append(''.join(top_guesses))
         #return preds
