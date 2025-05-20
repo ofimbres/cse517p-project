@@ -46,6 +46,9 @@ class MyModel:
         # this particular model doesn't train
         #dataset = load_dataset("tiny_shakespeare",trust_remote_code=True)
         #text = dataset['train'][0]['text']
+        # Wiki Small dataset
+        #dataset = load_dataset("wikitext","wikitext-2-v1",trust_remote_code=True)
+        #wiki large dataset
         dataset = load_dataset("wikitext","wikitext-103-v1",trust_remote_code=True)
         lines = dataset['train']['text']
         # Filter out empty lines
