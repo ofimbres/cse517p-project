@@ -167,3 +167,9 @@ Can test sentences be virtually anything? e.g. they intentionally test robustnes
 
 Do we have an unlimited appendix for the final report, such as a one-page report with a 10-page clarification?
 > No. There will be no appendix.
+
+## Useful Commands
+Execute the train in a Colab
+Save the model and load it 
+python src/myprogram.py test --work_dir work --test_data example/input.txt --test_output pred.txt
+python grader/grade.py pred.txt example/answer.txt --verbose

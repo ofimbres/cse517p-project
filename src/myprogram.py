@@ -44,8 +44,13 @@ class MyModel:
     def load_training_data(cls,seq_len=10, test_split=0.1):
         # your code here
         # this particular model doesn't train
-        dataset = load_dataset("tiny_shakespeare",trust_remote_code=True)
-        text = dataset['train'][0]['text']
+        #dataset = load_dataset("tiny_shakespeare",trust_remote_code=True)
+        #text = dataset['train'][0]['text']
+        dataset = load_dataset("wikitext","wikitext-103-v1",trust_remote_code=True)
+        lines = dataset['train']['text']
+        # Filter out empty lines
+        filtered_lines = [line for line in lines if line.strip() != ""]
+        text = "\n".join(filtered_lines)
         data = []
         for i in range(len(text) - seq_len):
             context = text[i:i+seq_len]
@@ -56,7 +61,7 @@ class MyModel:
         sample = True
         if sample:
             # Randomly sample 1% of the data
-            reduced_data = random.sample(data, int(len(data) * 0.01))
+            reduced_data = random.sample(data, int(len(data) * 0.2))
             train_data, _ = train_test_split(reduced_data, test_size=test_split, random_state=42)
         else:
             train_data, _ = train_test_split(data, test_size=test_split, random_state=42)
