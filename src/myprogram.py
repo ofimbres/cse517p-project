@@ -77,19 +77,20 @@ class MyModel:
         return train_data        
 
     @classmethod
-    def load_test_data(cls, fname, sequence_length=10):
+    def load_test_data(cls, fname):
         # your code here
         data = []
         with open(fname) as f:
             for line in f:
                 line = line.strip()
-                #inp = line[:-1]  # the last character is a newline
-                #data.appendNo(inp)
-                for i in range(len(line) - sequence_length):
-                    context = line[i:i+sequence_length]
-                    next_char = line[i+sequence_length]
-                    if all(c in cls.char2idx for c in context + next_char):
-                        data.append((context, next_char))
+                inp = line[:-1]  # the last character is a newline
+                data.append(inp)
+
+                # for i in range(len(line) - sequence_length):
+                #     context = line[i:i+sequence_length]
+                #     next_char = line[i+sequence_length]
+                #     if all(c in cls.char2idx for c in context + next_char):
+                #         data.append((context, next_char))
         return data
 
     @classmethod
@@ -130,9 +131,9 @@ class MyModel:
         # your code here
         self.model.eval()
         preds = []
-        all_chars = string.ascii_letters
         with torch.no_grad():
-            for context, _ in data:
+            print(data)
+            for context in data:
                 x = torch.tensor([[self.char2idx.get(c, 0) for c in context]], dtype=torch.long).to(self.device)
                 logits, _ = self.model(x)
                 probs = torch.softmax(logits, dim=-1)
