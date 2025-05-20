@@ -82,8 +82,8 @@ class MyModel:
         data = []
         with open(fname) as f:
             for line in f:
-                line = line.strip()
                 inp = line[:-1]  # the last character is a newline
+                print(inp)
                 data.append(inp)
 
                 # for i in range(len(line) - sequence_length):
@@ -132,12 +132,11 @@ class MyModel:
         self.model.eval()
         preds = []
         with torch.no_grad():
-            print(data)
             for context in data:
                 x = torch.tensor([[self.char2idx.get(c, 0) for c in context]], dtype=torch.long).to(self.device)
                 logits, _ = self.model(x)
                 probs = torch.softmax(logits, dim=-1)
-                top3 = torch.topk(probs, 3).indices[0].tolist()
+                top3 = torch.topk(probs, 1).indices[0].tolist()
                 pred_chars = [self.idx2char[i] for i in top3]
                 preds.append(''.join(pred_chars))
         return preds
