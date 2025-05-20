@@ -136,7 +136,7 @@ class MyModel:
                 x = torch.tensor([[self.char2idx.get(c, 0) for c in context]], dtype=torch.long).to(self.device)
                 logits, _ = self.model(x)
                 probs = torch.softmax(logits, dim=-1)
-                top3 = torch.topk(probs, 1).indices[0].tolist()
+                top3 = torch.topk(probs, 3).indices[0].tolist()
                 pred_chars = [self.idx2char[i] for i in top3]
                 preds.append(''.join(pred_chars))
         return preds
