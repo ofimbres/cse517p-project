@@ -14,6 +14,10 @@ from datasets import load_dataset
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
+from datasets import load_dataset
+import unicodedata
+from tqdm import tqdm
+from sklearn.model_selection import train_test_split
 
 class CharLSTM(nn.Module):
     def __init__(self, vocab_size, embedding_dim=64, hidden_dim=128):
@@ -42,11 +46,55 @@ class MyModel:
         self.model = CharLSTM(self.vocab_size).to(self.device)
 
     @classmethod
+    def load_training_data_multilingual(cls, seq_len=30, test_split=0.1, lang='en', sample_size=10000, pair_fraction=0.1):
+        """
+        Load and preprocess training data from the OSCAR dataset.
+        :param seq_len: Length of context string.
+        :param test_split: Fraction for test set.
+        :param lang: Language code (e.g., 'en', 'es', 'fr', 'zh').
+        :param sample_size: Number of lines to use.
+        :param pair_fraction: Fraction of (context, next_char) pairs to sample.
+        :return: Training data as list of (context, next_char) tuples.
+        """
+        
+        print(f"Loading OSCAR dataset for language: {lang}")
+        dataset = load_dataset("oscar", f"unshuffled_deduplicated_{lang}", split="train", trust_remote_code=True)
+
+        print("Filtering and normalizing text...")
+        def normalize(text):
+            text = unicodedata.normalize("NFKC", text)
+            return ''.join(c for c in text if not unicodedata.category(c).startswith('C'))
+
+        # Filter and normalize
+        lines = [normalize(sample['text']) for sample in dataset if sample['text'].strip() != ""]
+        sampled_lines = lines[:sample_size]  # limit size for memory
+
+        text = "\n".join(sampled_lines)
+        print(f"Combined sample text length: {len(text)}")
+
+        # Generate (context, next_char) pairs
+        num_possible = len(text) - seq_len
+        num_pairs = int(num_possible * pair_fraction)
+        indices = random.sample(range(num_possible), num_pairs)
+
+        data = []
+        for i in tqdm(indices, desc="Generating pairs"):
+            context = text[i:i + seq_len]
+            next_char = text[i + seq_len]
+            if all(c in cls.char2idx for c in context + next_char):
+                data.append((context, next_char))
+
+        print(f"Total valid training pairs: {len(data)}")
+        train_data, _ = train_test_split(data, test_size=test_split, random_state=42)
+        return train_data
+        
+
+    @classmethod
     def load_training_data(cls, seq_len=10, test_split=0.1):
         # your code here
-        # dataset_name="wikitext-2-v1"
-        dataset_name = "wikitext-103-v1"
-        sample_fraction=0.05
+        dataset_name="wikitext-2-v1"
+        #dataset_name = "wikitext-103-v1"
+        sample_fraction=0.5
         pair_fraction=0.1
 
         dataset = load_dataset("wikitext", dataset_name, trust_remote_code=True)
@@ -99,7 +147,7 @@ class MyModel:
             for p in preds:
                 f.write('{}\n'.format(p))
 
-    def run_train(self, data, work_dir, epochs=3, lr=0.003):
+    def run_train(self, data, work_dir, epochs=1, lr=0.003):
         # your code here
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(self.model.parameters(), lr=lr)
@@ -184,7 +232,7 @@ if __name__ == '__main__':
         print('Instatiating model')
         model = MyModel()
         print('Loading training data')
-        train_data = MyModel.load_training_data()
+        train_data = MyModel.load_training_data_multilingual()
         print('Training')
         model.run_train(train_data, args.work_dir)
         print('Saving model')
