@@ -2,7 +2,7 @@
 set -e
 set -x
 
-DATA=C:/Personal/Ashok/UW/Submit/example
+DATA=$1
 OUT=${2:-output}
 mkdir -p $OUT
 
@@ -15,7 +15,7 @@ function run() {
     -v $DATA:/job/data \
     -v $PWD/$OUT:/job/output \
     cse517-proj/demo \
-    bash "/job/src/predict.sh" "/job/data/input.txt" "/job/output/pred.txt"
+    bash /job/src/predict.sh /job/data/input.txt /job/output/pred.txt
 }
 
 (time run) > $OUT/output 2>$OUT/runtime
